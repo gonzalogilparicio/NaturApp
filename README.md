@@ -1,9 +1,9 @@
-## PaludApp
+# NaturApp
 
 - Programa para llenar un paludario cuando el agua llega a un determinado nivel
 - Integración con telegram bot para generar alertas
 
-# Componentes usados:
+## Componentes usados:
 
 - Arduino Mega 2560
 - Sensor 6017-1p
