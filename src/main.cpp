@@ -14,7 +14,7 @@
 //
 // autor: Gonzalo Gil Paricio
 // version: 1.0.0
-// repositorio público: https://github.com/gonzalogilparicio/paludario
+// repositorio público: https://github.com/gonzalogilparicio/NaturApp
 
 // librerias
 
