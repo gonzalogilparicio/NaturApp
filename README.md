@@ -10,4 +10,4 @@
 - Sensor 5csa-p45
 - Relay 1CH-TTL
 - Bomba de agua 12v
-- Ethernet Shield W5100
+- ESP32

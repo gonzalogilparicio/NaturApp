@@ -10,7 +10,7 @@
 // Sensor 5csa-p45
 // Relay 1CH-TTL
 // Bomba de agua 12v
-// Ethernet Shield W5100
+// ESP32
 //
 // autor: Gonzalo Gil Paricio
 // version: 1.0.0
@@ -18,12 +18,11 @@
 
 // librerias
 
-#include <SPI.h>
-#include <Ethernet.h>
+#include <CTBot.h>
 
-// asignacion MAC
+// creo instancias
 
-uint8_t mac[] = {0xC6}; // PONER LA MAC ACÁ
+CTBot bot;
 
 // declaración de variables y sus pines
 
@@ -31,35 +30,31 @@ int nivelMax1 = 2;
 int nivelMax2 = 4;
 int nivelMinPaludario = 6;
 int nivelMinBidon = 8;
-int bombaLlenado = 10;
+int bombaLlenado = 9;
 
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(9600);
 
-	// inicia conexion ethernet
+	// inicia conexion wifi
 
 	Serial.println("Iniciando...");
+	bot.wifiConnect("", ""); // VER ACA DE QUE SI NO CONECTA QUE SIGA INTENTANDO!!!!
 
-	// chequeo de fallas
+	// inicia telegram bot
 
-	if (Ethernet.begin(mac) == 0)
+	bot.setTelegramToken("");
+
+	if (bot.testConnection())
 	{
-		Serial.println("Falló la asignación de IP por DHCP");
-		if (Ethernet.hardwareStatus() == EthernetNoHardware)
-		{
-			Serial.println("El módulo ethernet no está siendo detectado");
-		}
-		else if (Ethernet.linkStatus() == LinkOFF)
-		{
-			Serial.println("Puede que el cable esté desconectado");
-		}
+		Serial.println("Telegram bot conectado");
+	}
+	else
+	{
+		Serial.println("Telegram bot sin conexión");
 	}
 
-	// si la asignación DHCP fue exitosa, se imprime la dirección asignada
-
-	Serial.print("La dirección IP asignada es: ");
-	Serial.println(Ethernet.localIP());
+	// configuro el comportamiento de cada pin
 
 	pinMode(nivelMax1, INPUT);
 	pinMode(nivelMax2, INPUT);
@@ -79,10 +74,10 @@ void loop()
 
 	// muestra en monitor serie los estados actuales de cada sensor
 
-	Serial.println(estadoNivelMax1);
-	Serial.println(estadoNivelMax2);
-	Serial.println(estadoNivelMinPaludario);
-	Serial.println(estadoNivelMinBidon);
+	Serial.println("Nivel Max 1: ", estadoNivelMax1);
+	Serial.println("Nivel Max 2: ", estadoNivelMax2);
+	Serial.println("Nivel Min Paludario: ", estadoNivelMinPaludario);
+	Serial.println("Nivel Min Bidon: ", estadoNivelMinBidon);
 
 	// condiciones
 
@@ -93,8 +88,8 @@ void loop()
 	if (estadoNivelMax1 == 0 && estadoNivelMax2 == 0 && estadoNivelMinPaludario == 0 && estadoNivelMinBidon == 1)
 	{
 		digitalWrite(bombaLlenado, HIGH);
-		Serial.println("Llenando paludario");		
-		// MANDAR TELEGRAM O MAIL
+		Serial.println("Llenando paludario");
+		bot.sendMessage(1249478693, "Llenando paludario");
 	}
 
 	// si alguno de los sensores de niveles maximos de llenado cambia
@@ -104,7 +99,7 @@ void loop()
 	{
 		digitalWrite(bombaLlenado, LOW);
 		Serial.println("Llenado finalizado");
-		// MANDAR TELEGRAM O MAIL
+		bot.sendMessage(1249478693, "Llenado finalizado");
 	}
 
 	// si el bidon está vacio, el llenado no se inicia y manda alerta por telegram
@@ -113,7 +108,7 @@ void loop()
 	{
 		Serial.println("Bidon de agua vacio");
 		digitalWrite(bombaLlenado, LOW);
-		// MANDAR TELEGRAM O MAIL
+		bot.sendMessage(1249478693, "Bidon de agua vacio");
 	}
 
 	// si no ocurre ninguna de las situaciones anteriores, entonces
