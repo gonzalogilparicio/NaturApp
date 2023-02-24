@@ -25,7 +25,7 @@
 
 uint8_t mac[] = {0xC6}; // PONER LA MAC ACÁ
 
-// declaración de nombres y pines
+// declaración de variables y sus pines
 
 int nivelMax1 = 2;
 int nivelMax2 = 4;
