@@ -19,6 +19,7 @@
 // librerias
 
 #include <CTBot.h>
+#include <WiFi.h>
 
 // creo instancias
 
@@ -26,20 +27,39 @@ CTBot bot;
 
 // declaración de variables y sus pines
 
-int nivelMax1 = 2;
-int nivelMax2 = 4;
-int nivelMinPaludario = 6;
-int nivelMinBidon = 8;
-int bombaLlenado = 9;
+const int nivelMax1 = 36;
+const int nivelMax2 = 39;
+const int nivelMinPaludario = 34;
+const int nivelMinBidon = 35;
+const int bombaLlenado = 13;
+const int telegramUserID = 1249478693;
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(115200);
 
 	// inicia conexion wifi
 
-	Serial.println("Iniciando...");
-	bot.wifiConnect("", ""); // VER ACA DE QUE SI NO CONECTA QUE SIGA INTENTANDO!!!!
+	Serial.println("Iniciando programa");
+	int attempts = 0;
+	while (WiFi.status() != WL_CONNECTED && attempts < 10)
+	{
+		attempts++;
+		Serial.println("Intentando conectar a WiFi...");
+		bot.wifiConnect("");
+		delay(1000);
+	}
+
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		Serial.println("WiFi conectado");
+		Serial.println("Dirección IP asignada: ");
+		Serial.println(WiFi.localIP());
+	}
+	else
+	{
+		Serial.println("No se pudo conectar a WiFi");
+	}
 
 	// inicia telegram bot
 
@@ -48,6 +68,7 @@ void setup()
 	if (bot.testConnection())
 	{
 		Serial.println("Telegram bot conectado");
+		bot.sendMessage(telegramUserID, "Conexión con telegram establecida");
 	}
 	else
 	{
@@ -63,21 +84,38 @@ void setup()
 	pinMode(bombaLlenado, OUTPUT);
 }
 
+// funcion de llenado
+
+void llenarPaludario()
+{
+	Serial.println("Llenando paludario");
+	bot.sendMessage(telegramUserID, "Llenando paludario");
+
+	while (digitalRead(nivelMax1) == 0 && digitalRead(nivelMax2) == 0 && digitalRead(nivelMinBidon) == 0)
+	{
+		digitalWrite(bombaLlenado, HIGH);
+		delay(100);
+	}
+
+	digitalWrite(bombaLlenado, LOW);
+	Serial.println("Llenado finalizado");
+	bot.sendMessage(telegramUserID, "Llenado finalizado");
+}
+
 void loop()
 {
-	// lectura de los estados de los sensores
+	Serial.println("Arrancando loop");
 
-	int estadoNivelMax1 = digitalRead(nivelMax1);
-	int estadoNivelMax2 = digitalRead(nivelMax2);
-	int estadoNivelMinPaludario = digitalRead(nivelMinPaludario);
-	int estadoNivelMinBidon = digitalRead(nivelMinBidon);
+	int valorNM1 = digitalRead(nivelMax1);
+	int valorNM2 = digitalRead(nivelMax2);
+	int valorNMP = digitalRead(nivelMinPaludario);
+	int valorNMB = digitalRead(nivelMinBidon);
+
+	String msgValores = "Nivel Max 1: " + String(valorNM1) + "\nNivel Max 2: " + String(valorNM2) + "\nNivel Min Paludario: " + String(valorNMP) + "\nNivel Min Bidon: " + String(valorNMB);
 
 	// muestra en monitor serie los estados actuales de cada sensor
 
-	Serial.println("Nivel Max 1: ", estadoNivelMax1);
-	Serial.println("Nivel Max 2: ", estadoNivelMax2);
-	Serial.println("Nivel Min Paludario: ", estadoNivelMinPaludario);
-	Serial.println("Nivel Min Bidon: ", estadoNivelMinBidon);
+	Serial.println(msgValores);
 
 	// condiciones
 
@@ -85,39 +123,22 @@ void loop()
 	// paludario está en 0 y el sensor de nivel minimo de bidon está en 1, entonces empieza a llenar
 	// avisando del evento por telegram
 
-	if (estadoNivelMax1 == 0 && estadoNivelMax2 == 0 && estadoNivelMinPaludario == 0 && estadoNivelMinBidon == 1)
+	if (digitalRead(nivelMax1) == 0 && digitalRead(nivelMax2) == 0 && digitalRead(nivelMinPaludario) == 1 && digitalRead(nivelMinBidon) == 0)
 	{
-		digitalWrite(bombaLlenado, HIGH);
-		Serial.println("Llenando paludario");
-		bot.sendMessage(1249478693, "Llenando paludario");
+		llenarPaludario();
 	}
-
-	// si alguno de los sensores de niveles maximos de llenado cambia
-	// su estado a 1, el llenado se frena y manda aviso por telegram
-
-	else if (estadoNivelMax1 == 1 || estadoNivelMax2 == 1)
-	{
-		digitalWrite(bombaLlenado, LOW);
-		Serial.println("Llenado finalizado");
-		bot.sendMessage(1249478693, "Llenado finalizado");
-	}
-
 	// si el bidon está vacio, el llenado no se inicia y manda alerta por telegram
 
-	else if (estadoNivelMinBidon == 0)
+	if (digitalRead(nivelMinBidon) == 1)
 	{
-		Serial.println("Bidon de agua vacio");
 		digitalWrite(bombaLlenado, LOW);
-		bot.sendMessage(1249478693, "Bidon de agua vacio");
+		Serial.println("Bidon de agua vacio");
+		bot.sendMessage(telegramUserID, "Bidon de agua vacio");
 	}
 
 	// si no ocurre ninguna de las situaciones anteriores, entonces
 	// el paludario tiene agua y la bomba permanece apagada
 
-	else
-	{
-		digitalWrite(bombaLlenado, LOW);
-	}
-
-	delay(1000); // probar iteraciones con este segundo y con 10 o 20 a ver que pasa
+	Serial.println("Llegué al final del loop");
+	delay(5000); // probar iteraciones con este segundo y con 10 o 20 a ver que pasa
 }
