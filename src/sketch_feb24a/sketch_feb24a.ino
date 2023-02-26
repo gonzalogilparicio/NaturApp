@@ -33,6 +33,8 @@ const int nivelMinPaludario = 34;
 const int nivelMinBidon = 35;
 const int botonLlenadoManual = 32;
 const int botonFrenaPrograma = 33;
+// const int botonVaciado = 25;
+// const int bombaVaciado = 26;
 const int bombaLlenado = 13;
 const int telegramUserID = 1249478693;
 
@@ -46,7 +48,7 @@ void setup()
 
 	Serial.println("Iniciando programa");
 
-	// intenta conectar y chequeo de errores
+	// intenta conectar a wifi y chequeo de errores
 
 	int attempts = 0;
 	while (WiFi.status() != WL_CONNECTED && attempts < 10)
@@ -91,7 +93,9 @@ void setup()
 	pinMode(nivelMinPaludario, INPUT);
 	pinMode(nivelMinBidon, INPUT);
 	pinMode(botonLlenadoManual, INPUT);
+	// pinMode(botonVaciado, INPUT);
 	pinMode(botonFrenaPrograma, INPUT);
+	// pinMode(bombaVaciado, OUTPUT);
 	pinMode(bombaLlenado, OUTPUT);
 }
 
@@ -149,20 +153,41 @@ void bidonVacio()
 	}
 }
 
+// funcion de vaciado
+
+// void vaciado()
+// {
+// 	digitalWrite(bombaLlenado, LOW);
+// 	Serial.println("Vaciando");
+// 	bot.sendMessage(telegramUserID, "Vaciando");
+
+// 	while (digitalRead(nivelVacio) == 0 && digitalRead(bombaLlenado) == LOW)
+// 	{
+// 		digitalWrite(bombaVaciado, HIGH);
+// 		// delay(300000);
+// 		delay(1000); // SOLO PARA PRUEBAS
+// 	}
+// 	digitalWrite(bombaVaciado, LOW);
+// 	Serial.println("Vaciado finalizado");
+// 	bot.sendMessage(telegramUserID, "Vaciado finalizado");
+// }
+
 // loop
 
 void loop()
 {
 	Serial.println("Arrancando loop");
 
-	// almaceno estado en variables para que me las muestre por monitor serial (para testing)
+	// almaceno estado en variables
 
 	int valorNM1 = digitalRead(nivelMax1);
 	int valorNM2 = digitalRead(nivelMax2);
 	int valorNMP = digitalRead(nivelMinPaludario);
 	int valorNMB = digitalRead(nivelMinBidon);
+	int valorBLM = digitalRead(botonLlenadoManual);
+	int valorBFP = digitalRead(botonFrenaPrograma);
 
-	String msgValores = "Nivel Max 1: " + String(valorNM1) + "\nNivel Max 2: " + String(valorNM2) + "\nNivel Min Paludario: " + String(valorNMP) + "\nNivel Min Bidon: " + String(valorNMB);
+	String msgValores = "\n\nNivel Max 1: " + String(valorNM1) + "\nNivel Max 2: " + String(valorNM2) + "\nNivel Min Paludario: " + String(valorNMP) + "\nNivel Min Bidon: " + String(valorNMB) + "\nBoton Llenado Manual: " + String(valorBLM) + "\nBoton Frena Programa: " + String(valorBFP) + "\n\n";
 
 	// muestra en monitor serie los estados actuales de cada sensor
 
@@ -174,13 +199,13 @@ void loop()
 	// paludario está en 0, el sensor de nivel minimo de bidon está en 0, y el boton de freno de programa está en 0,
 	// entonces empieza a llenar, avisando del evento por telegram
 
-	if (digitalRead(nivelMax1) == 0 && digitalRead(nivelMax2) == 0 && digitalRead(nivelMinPaludario) == 1 && digitalRead(nivelMinBidon) == 0 && digitalRead(botonFrenaPrograma) == 0)
+	if (valorNM1 == 0 && valorNM2 == 0 && valorNMP == 1 && valorNMB == 0 && valorBFP == 0)
 	{
 		llenarPaludario();
 	}
 	// si el bidon está vacio, el llenado no se inicia y manda alerta por telegram
 
-	if (digitalRead(nivelMinBidon) == 1)
+	else if (valorNMB == 1)
 	{
 		bidonVacio();
 	}
@@ -188,7 +213,7 @@ void loop()
 	// si el boton de llenado manual es presionado y el programa no está frenado
 	// comienza a llenar, avisando del evento por telegram
 
-	if (digitalRead(botonLlenadoManual) == 1 && digitalRead(botonFrenaPrograma) == 0)
+	else if (valorNM1 == 0 && valorNM2 == 0 && valorBLM == 1 && valorBFP == 0)
 	{
 		llenarPaludario();
 	}
@@ -196,11 +221,11 @@ void loop()
 	// si el boton de freno de programa está presionado, todo el programa queda pausado
 	// hasta que se desactive el boton
 
-	if (digitalRead(botonFrenaPrograma) == 1)
+	else if (valorBFP == 1)
 	{
 		frenaPrograma();
 	}
 
 	Serial.println("Llegué al final del loop");
-	delay(5000); // probar iteraciones con este segundo y con 10 o 20 a ver que pasa
+	delay(1000); // probar iteraciones con este segundo y con 10 o 20 a ver que pasa
 }
